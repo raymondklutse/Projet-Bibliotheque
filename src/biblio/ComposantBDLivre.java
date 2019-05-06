@@ -91,7 +91,7 @@ public class ComposantBDLivre {
      Statement stmt = Connexion.getConnection().createStatement();
 	 String sql = "select * from livre where id="+idLivre;
 	  ResultSet rset = stmt.executeQuery(sql);
-     rset.next();
+      rset.next();
 	  livre[0]=rset.getString("id");
 	  livre[1]=rset.getString("isbn10");
 	  livre[2]=rset.getString("isbn13");
@@ -123,14 +123,20 @@ public class ComposantBDLivre {
   public static String[] getLivreParIdExemplaire(int idExemplaire) throws SQLException {
     String[] livre = new String[6];
       Statement stmt = Connexion.getConnection().createStatement();
-	  String sql = "select * from livre where id_exemplaire = "+idExemplaire;
+	  String sql = "select exemplaire.id as id_exemplaire,livre.id as id_livre ,livre.isbn10,livre.isbn13,livre.titre,livre.auteur "
+			  		+"from exemplaire "
+			  		+"join livre "
+			  		+"on exemplaire.id_livre=livre.id "
+			  		+"where exemplaire.id="+idExemplaire;
 	  ResultSet rset = stmt.executeQuery(sql);
 	  
-	  livre[0]=rset.getString("id");
-	  livre[1]=rset.getString("isbn10");
-	  livre[2]=rset.getString("isbn13");
-	  livre[3]=rset.getString("titre");
-	  livre[4]=rset.getString("autuer");
+	  rset.next();
+	  livre[0]=rset.getString("id_exemplaire");
+	  livre[1]=rset.getString("id_livre");
+	  livre[2]=rset.getString("isbn10");
+	  livre[3]=rset.getString("isbn13");
+	  livre[4]=rset.getString("titre");
+	  livre[5]=rset.getString("auteur");
 	  
 	  rset.close();
 	  stmt.close();
@@ -148,12 +154,36 @@ public class ComposantBDLivre {
    * @throws SQLException en cas d'erreur de connexion à la base.
    */
   public static int insererNouveauLivre(String isbn10, String isbn13, String titre, String auteur) throws SQLException {
-	 
+	  String sql=null;
 	  Statement stmt = Connexion.getConnection().createStatement();
-	  String sql ="insert into livre (isbn10,isbn13,titre,auteur) values( " + "'"+isbn10+"'" + "," +"'"+isbn13+"'" + "," +"'"+titre+"'" + "," +"'" +auteur+"'" + ")" ;
-	  ResultSet rset = stmt.executeQuery(sql);
-	  rset.next();
 	  
+	  if(isbn10==""& isbn13 == "" &auteur==""){
+		  sql="insert into livre (titre) values (" + "'"+titre+"'" + ")" ;
+	  }
+	  else if(isbn10==""&isbn13==""){
+		  sql="insert into livre (auteur,titre) values(  " +"'"+ auteur+"'"+","+"'"+titre+"'" + ")" ;
+	  }
+	  else if(isbn10==""){
+		  sql="insert into livre (isbn13,auteur,titre) values(  " +"'"+ isbn13+"'"+","+"'"+ auteur+"'"+","+"'"+titre+"'" + ")" ;
+	  }
+	  else{
+		  sql ="insert into livre (isbn10,isbn13,titre,auteur) values( " + "'"+isbn10+"'" + "," +"'"+isbn13+"'" + "," +"'"+titre+"'" + "," +"'" +auteur+"'" + ")" ;
+	  }
+	  System.out.println(sql);
+	  stmt.executeUpdate(sql);
+	  String sql_1 = "";
+	  if(isbn10 != ""){
+		  sql_1="select id from livre where isbn10 ="+"'"+isbn10+"'";
+	  }
+	  if(isbn13 != ""){
+		  sql_1="select id from livre where isbn13 ="+"'"+isbn13+"'";
+	  }
+	  else{
+		  sql_1="select id from livre where titre ="+"'"+titre+"'";
+	  }
+	  System.out.println(sql_1);
+	  ResultSet rset = stmt.executeQuery(sql_1);
+	  rset.next();
 	  int identifiant= rset.getInt("id");
 			  
 	  rset.close();
@@ -176,9 +206,7 @@ public class ComposantBDLivre {
   public static void modifierLivre(int idLivre, String isbn10, String isbn13, String titre, String auteur) throws SQLException {
 	  Statement stmt = Connexion.getConnection().createStatement();
 	  String sql ="update livre set isbn10 = " +"'"+isbn10+"'" +","+isbn13 +"="+"'"+isbn13+"'" +","+titre+"="+"'"+titre+"'" +","+auteur+"="+"'"+isbn10+"'" +"," ;
-	  ResultSet rset = stmt.executeQuery(sql);
-	 
-	  rset.close();
+	  stmt.executeUpdate(sql);
 	  stmt.close();
   }
 
@@ -191,9 +219,7 @@ public class ComposantBDLivre {
    public static void supprimerLivre(int idLivre) throws SQLException {
 	   Statement stmt = Connexion.getConnection().createStatement();
 	   String sql ="delete from livre where id =" + idLivre;
-	   ResultSet rset = stmt.executeQuery(sql);
-		 
-	   rset.close();
+	   stmt.executeUpdate(sql);
 	   stmt.close();
    }
 
@@ -248,6 +274,7 @@ public class ComposantBDLivre {
    public static void ajouterExemplaire(int idLivre) throws SQLException {
 	    Statement stmt = Connexion.getConnection().createStatement();
 		String sql = "insert into exemplaire(id_livre) values("+idLivre+")";
+		System.out.print(sql);
 	    stmt.executeUpdate(sql);
 	    
 		stmt.close();
@@ -262,8 +289,16 @@ public class ComposantBDLivre {
      */
    public static void supprimerExemplaire(int idExemplaire) throws SQLException {
 	   Statement stmt = Connexion.getConnection().createStatement();
-	   String sql="delete from exemplaire where id="+idExemplaire;
-	   stmt.executeUpdate(sql);
+	   String sql="delete from emprunt where  id_exemplaire="+idExemplaire;
+	   String sql1="delete from exemplaire where id="+idExemplaire;
+	   boolean estEmprunte = ComposantBDEmprunt.estEmprunte(idExemplaire);
+		  if(!estEmprunte){
+			  System.out.println(sql);
+			  System.out.println(sql1);
+			  stmt.executeUpdate(sql);
+			  stmt.executeUpdate(sql1);
+		  }
+	  
    }
 
 }

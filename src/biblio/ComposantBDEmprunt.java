@@ -4,7 +4,11 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 
 /**
@@ -73,33 +77,38 @@ public class ComposantBDEmprunt {
    */
   public static ArrayList<String[]> listeEmpruntsEnCours() throws SQLException {
     ArrayList<String[]> emprunts = new ArrayList<String[]>();
+
     Statement stmt = Connexion.getConnection().createStatement();
-	  String sql = "select exemplaire.id as id_exemplaire,exemplaire.id_livre,livre.titre,"
-	  		+ "livre.auteur,abonne.id as id_abonne,abonne.nom,abonne.prenom,emprunt.date_emprunt "
-	  		+ "from (((emprunt inner join abonne on emprunt.id_abonne=abonne.id)"
-	  		+ "inner join exemplaire on emprunt.id_exemplaire=exemplaire.id)"
-	  		+ "inner join livre on exemplaire.id_livre=livre.id) "
-	  		+"where emprunt.date_retour is null and emprunt.date_emprunt is not null";
+    String sql = "select exemplaire.id as id_exemplaire  ,exemplaire.id_livre as id_livre,livre.titre ,livre.auteur ,abonne.id as id_abonne ,abonne.nom as abonne_nom ,abonne.prenom as abonne_prenom,emprunt.date_emprunt "
+    		+"from emprunt "
+    		+"inner join abonne on emprunt.id_abonne=abonne.id " 
+    		+"inner join exemplaire on emprunt.id_exemplaire=exemplaire.id " 
+    		+"inner join livre on exemplaire.id_livre=livre.id " 
+    		+"where emprunt.date_emprunt is not null ";
 	  ResultSet rset = stmt.executeQuery(sql);
 	  String[] emprunt =new String[8];
+	  System.out.println(sql);
+	  
 	  while(rset.next()){
 	  emprunt[0]=rset.getString("id_exemplaire");
+	  System.out.println("ID exemplaire : " + emprunt[0] + " \n");
 	  emprunt[1]=rset.getString("id_livre");
 	  emprunt[2]=rset.getString("titre");
 	  emprunt[3]=rset.getString("auteur");
 	  emprunt[4]=rset.getString("id_abonne");
-	  emprunt[5]=rset.getString("nom");
-	  emprunt[6]=rset.getString("prenom");
+	  emprunt[5]=rset.getString("abonne_nom");
+	  emprunt[6]=rset.getString("abonne_prenom");
 	  emprunt[7]=rset.getString("date_emprunt");
 	  emprunts.add(emprunt);
-	  }
-	 
+	  System.out.println(rset.next() + " \n");
+		  }
 	  
-      rset.close();
+	  rset.close();
 	  stmt.close();
     return emprunts;
   }
 
+  
   /**
    * Récupération de la liste des emprunts en cours pour un abonné donné.
    * 
@@ -118,12 +127,15 @@ public class ComposantBDEmprunt {
   public static ArrayList<String[]> listeEmpruntsEnCours(int idAbonne) throws SQLException {
     ArrayList<String[]> emprunts = new ArrayList<String[]>();
     Statement stmt = Connexion.getConnection().createStatement();
-    String sql ="select exemplaire.id as id_exemplaire,exemplaire.id_livre,livre.titre,livre.auteur,"
-    		+"emprunt.date_emprunt"+" from ((exemplaire inner join livre on exemplaire.id_livre=livre.id) inner join emprunt on exemplaire.id=emprunt.id_exemplaire)"
-    		+"where exemplaire.id_abonne="+idAbonne;
-     ResultSet rset = stmt.executeQuery(sql);
-	while( rset.next()){
-	 
+    String sql = "select exemplaire.id as id_exemplaire  ,exemplaire.id_livre as id_livre,livre.titre ,livre.auteur ,abonne.id as id_abonne ,abonne.nom as abonne_nom ,abonne.prenom as abonne_prenom,emprunt.date_emprunt "
+    		+"from emprunt "
+    		+"inner join abonne on emprunt.id_abonne=abonne.id " 
+    		+"inner join exemplaire on emprunt.id_exemplaire=exemplaire.id " 
+    		+"inner join livre on exemplaire.id_livre=livre.id " 
+    		+"where emprunt.date_emprunt is not null and abonne.id = "+ idAbonne;
+    ResultSet rset = stmt.executeQuery(sql);
+
+	while(rset.next()){
 	  String[] emprunt = new String[5];
 	  emprunt[0]=rset.getString("id_exemplaire");
 	  emprunt[1]=rset.getString("id_livre");
@@ -136,6 +148,7 @@ public class ComposantBDEmprunt {
 	  rset.close();
 	  stmt.close();
     return emprunts;
+    
   }
 
   /**
@@ -161,12 +174,12 @@ public class ComposantBDEmprunt {
   public static ArrayList<String[]> listeEmpruntsHistorique() throws SQLException {
     ArrayList<String[]> emprunts = new ArrayList<String[]>();
     Statement stmt = Connexion.getConnection().createStatement();
-	  String sql = "select exemplaire.id as id_exemplaire,exemplaire.id_livre,livre.titre,"
-	  		+ "livre.auteur,abonne.id as id_abonne,abonne.nom,abonne.prenom,emprunt.date_emprunt "
-	  		+ "from (((emprunt inner join abonne on emprunt.id_abonne=abonne.id) "
-	  		+ "inner join exemplaire on emprunt.id_exemplaire=exemplaire.id)"
-	  		+ "inner join livre on exemplaire.id_livre=livre.id)"
-	  		+"where emprunt.date_retour is not null and emprunt.date_emprunt is not null";
+    String sql = "select exemplaire.id as id_exemplaire  ,exemplaire.id_livre as id_livre,livre.titre ,livre.auteur ,abonne.id as id_abonne ,abonne.nom as abonne_nom ,abonne.prenom as abonne_prenom,emprunt.date_emprunt,emprunt.date_retour "
+    		+"from emprunt "
+    		+"inner join abonne on emprunt.id_abonne=abonne.id " 
+    		+"inner join exemplaire on emprunt.id_exemplaire=exemplaire.id " 
+    		+"inner join livre on exemplaire.id_livre=livre.id " 
+    		+"where emprunt.date_emprunt is not null";
 	  ResultSet rset = stmt.executeQuery(sql);
 	  
 	  while(rset.next()){
@@ -177,11 +190,10 @@ public class ComposantBDEmprunt {
 	  emprunt[2]=rset.getString("titre");
 	  emprunt[3]=rset.getString("auteur");
 	  emprunt[4]=rset.getString("id_abonne");
-	  emprunt[5]=rset.getString("nom");
-	  emprunt[6]=rset.getString("prenom");
+	  emprunt[5]=rset.getString("abonne_nom");
+	  emprunt[6]=rset.getString("abonne_prenom");
 	  emprunt[7]=rset.getString("date_emprunt");
 	  emprunt[8]=rset.getString("date_retour");
-	  
 	  emprunts.add(emprunt);
 	  }
       rset.close();
@@ -196,13 +208,28 @@ public class ComposantBDEmprunt {
    * @param idAbonne : id de l'abonné emprunteur.
    * @param idExemplaire id de l'exemplaire emprunté.
    * @throws SQLException en cas d'erreur de connexion à la base.
+   * @throws ParseException 
    */
-  public static void emprunter(int idAbonne, int idExemplaire) throws SQLException {
+  public static void emprunter(int idAbonne, int idExemplaire) throws SQLException, ParseException {
 	  Statement stmt = Connexion.getConnection().createStatement();
-	  String sql =" insert into emprunt(id_exemplaire,id_abonne) values("+idAbonne+","+idExemplaire+")";
+	  Calendar calendar = Calendar.getInstance();
+	  String date_emprunt = new SimpleDateFormat("yyyy-MM-dd").format(calendar.getTime()); 
+	 
+	  SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");     
+	  calendar.add(Calendar.WEEK_OF_YEAR,1);
+	  String date_retour = new SimpleDateFormat("yyyy-MM-dd").format(calendar.getTime());
+	
+	  System.out.println("Date emprunt:" + date_emprunt);
+	  System.out.println("Date retour:" + date_retour);
+	  String sql ="insert into emprunt(id_exemplaire,id_abonne,date_emprunt,date_retour) values(" + idExemplaire + "," + idAbonne + "," + "'" + date_emprunt + "'" +","+ "'" + date_retour+ "')";
+	
 	  stmt.executeUpdate(sql);
 	  stmt.close();
   }
+  private static java.sql.Date getCurrentDate() {
+	    java.util.Date today = new java.util.Date();
+	    return new java.sql.Date(today.getTime());
+	}
 
   /**
    * Retourner un exemplaire à partir de son identifiant.
@@ -212,7 +239,7 @@ public class ComposantBDEmprunt {
    */
   public static void rendre(int idExemplaire) throws SQLException {
 	  Statement stmt = Connexion.getConnection().createStatement();
-	  String sql ="delete from exemplaire where id="+idExemplaire;
+	  String sql ="delete from emprunt where id="+idExemplaire;
 	  stmt.executeUpdate(sql);
 	  stmt.close();
   }
@@ -228,11 +255,17 @@ public class ComposantBDEmprunt {
   public static boolean estEmprunte(int idExemplaire) throws SQLException {
     boolean estEmprunte ;
     Statement stmt = Connexion.getConnection().createStatement();
-	  String sql ="select date_retour ,date_emprunt from emprunt where id_exemplaire=0";
+	  String sql ="select date_retour ,date_emprunt from emprunt where id_exemplaire=" + idExemplaire;
+	  System.out.println(sql);
 	  ResultSet rset = stmt.executeQuery(sql);
 	  rset.next();
-	  String E=rset.getString("date_retour");
-	  String R=rset.getString("date_emprunt");
+	  String R = null;
+	  String E = null;
+	  if(rset.next()){
+		  R=rset.getString("date_retour");
+		  E=rset.getString("date_emprunt");
+	  }
+	  
 	  if(R==null){
 		  if(E!=null){
 			   estEmprunte = true;
@@ -275,9 +308,36 @@ public class ComposantBDEmprunt {
   public static HashMap<String, int[]> statsEmprunts() throws SQLException
   {
     HashMap<String, int[]> stats = new HashMap<String, int[]>();
-    //
-    // A COMPLETER
-    //
+    Statement stmt = Connexion.getConnection().createStatement();
+    String sql1 = "select date_emprunt ,count(*) from emprunt group by date_emprunt";
+	ResultSet rset1 = stmt.executeQuery(sql1);
+	String sql2 = "date_retour ,count(*) from emprunt group by date_retour";
+	ResultSet rset2 = stmt.executeQuery(sql1);
+	 while(rset1.next()){
+		 String[] emprunt =new String[2];
+		 emprunt[0]=rset1.getString("date_emprunt");
+		 emprunt[1]=rset1.getString("count");
+		 Integer[] nums = new Integer[2];
+		
+		 while(rset2.next()){
+			 String[] retour =new String[2];
+			 retour[0]=rset1.getString("date_retour");
+			 retour[1]=rset1.getString("count");
+			 if(emprunt[0] == retour[0] ){
+				 System.out.print(retour[0]);
+				 nums[0] = Integer.valueOf(emprunt[1]);
+				 nums[1] = Integer.valueOf(retour[1]);
+				 System.out.print(nums[0]);
+				 System.out.print(nums[1]);
+			 }
+			 
+		 }
+		 
+	 }
+	 rset1.close();
+	 rset2.close();
+	 stmt.close();
+		  
     return stats;
   }
 }

@@ -29,9 +29,25 @@ public class ComposantBDAbonne {
   public static ArrayList<String[]> listeTousLesAbonnes() throws SQLException {
     // L'ArrayList qui sera renvoyé : structure de données de type tableau non limitée en taille
     ArrayList<String[]> abonnes = new ArrayList<String[]>();
-    //
-    // A COMPLETER
-    //
+
+    Statement stmt = Connexion.getConnection().createStatement();
+    String sql = "select * from abonne";
+    ResultSet rset = stmt.executeQuery(sql);
+     
+    while (rset.next()) {
+    	String[] abonne = new String[5];
+    	abonne[0] =rset.getString("id");
+    	abonne[1] = rset.getString("nom");
+    	abonne[2] = rset.getString("prenom");
+    	abonne[3] = rset.getString("statut");
+    	abonne[4] = rset.getString("email");
+
+    	abonnes.add(abonne);
+      }
+    
+    rset.close();
+    stmt.close();
+    
     return abonnes;
   }
 
@@ -42,10 +58,20 @@ public class ComposantBDAbonne {
    * @throws SQLException en cas d'erreur de connexion à la base.
    */
   public static int nbAbonnes() throws SQLException {
-    //
-    // A COMPLETER
-    //
-    return -1;
+      int nbAbonnes=0;
+ 	  
+	  Statement stmt = Connexion.getConnection().createStatement();
+	  String sql = "select count(*) from abonne";
+	  ResultSet rset = stmt.executeQuery(sql);
+	  
+	  rset.next();
+	  nbAbonnes= rset.getInt("count");
+	  
+	  rset.close();
+	  stmt.close();
+	  
+    return nbAbonnes;
+    
   }
 
   /**
@@ -65,10 +91,21 @@ public class ComposantBDAbonne {
    */
   public static String[] getAbonne(int idAbonne) throws SQLException {
     String[] abonne = new String[5];
-    //
-    // A COMPLETER
-    //
+    
+    Statement stmt = Connexion.getConnection().createStatement();
+	 String sql = "select * from abonne where id="+idAbonne;
+	  ResultSet rset = stmt.executeQuery(sql);
+     rset.next();
+     abonne[0]=rset.getString("id");
+     abonne[1]=rset.getString("nom");
+     abonne[2]=rset.getString("prenom");
+     abonne[3]=rset.getString("statut");
+     abonne[4]=rset.getString("email");
+	  
+	  rset.close();
+	  stmt.close();
     return abonne;
+
   }
 
   /**
@@ -82,10 +119,23 @@ public class ComposantBDAbonne {
    * @throws SQLException en cas d'erreur de connexion à la base.
    */
   public static int insererNouvelAbonne(String nom, String prenom, String statut, String email) throws SQLException {
-    //
-    // A COMPLETER
-    //
-    return -1;
+	  String sql=null;
+	  Statement stmt = Connexion.getConnection().createStatement();
+	  if(statut.equals("Etudiant") || statut.equals("Enseignant")){
+		  sql="insert into abonne (nom,prenom,statut,email) values("+"'"+nom+"'"+","+"'"+prenom+"'"+","+"'"+statut+"'"+","+"'"+email+"'"+")";
+	  }
+	  stmt.executeUpdate(sql);
+	  String sql_1="select id from abonne where nom="+"'"+nom+"'"+ "and prenom="+"'"+prenom+"'"+"and statut="+"'"+statut+"'"+ "and email="+"'"+email+"'";
+	  ResultSet rset = stmt.executeQuery(sql_1);
+	  rset.next();
+	  int identifiant= rset.getInt("id");
+			  
+	  rset.close();
+	  stmt.close();
+      return identifiant;
+	  
+	  
+   
   }
 
   /**
@@ -100,9 +150,10 @@ public class ComposantBDAbonne {
    * @throws SQLException en cas d'erreur de connexion à la base.
    */
   public static void modifierAbonne(int idAbonne, String nom, String prenom, String statut, String email) throws SQLException {
-    //
-    // A COMPLETER
-    //
+	  Statement stmt = Connexion.getConnection().createStatement();
+	  String sql ="update abonne set nom = " +"'"+nom+"'"+","+"prenom="+"'"+prenom+"'"+","+"statut="+"'"+statut+"'"+","+"email="+"'"+email+"'"+"where id="+idAbonne;
+	  stmt.executeUpdate(sql);
+	  stmt.close();
   }
 
   /**
@@ -112,8 +163,9 @@ public class ComposantBDAbonne {
    * @throws SQLException en cas d'erreur de connexion à la base.
    */
   public static void supprimerAbonne(int idAbonne) throws SQLException {
-    //
-    // A COMPLETER
-    //
+	  Statement stmt = Connexion.getConnection().createStatement();
+	   String sql ="delete from abonne where id =" + idAbonne;
+	   stmt.executeUpdate(sql);
+	   stmt.close();
   }
 }
