@@ -205,8 +205,15 @@ public class ComposantBDLivre {
    */
   public static void modifierLivre(int idLivre, String isbn10, String isbn13, String titre, String auteur) throws SQLException {
 	  Statement stmt = Connexion.getConnection().createStatement();
-	  String sql ="update livre set isbn10 = " +"'"+isbn10+"'" +","+isbn13 +"="+"'"+isbn13+"'" +","+titre+"="+"'"+titre+"'" +","+auteur+"="+"'"+isbn10+"'" +"," ;
+	  
+	  String sql ="update livre set "
+	  +"isbn10 = "+ "'" +isbn10+ "'" 
+	  +",isbn13 = "+ "'" +isbn13+ "'"
+	  +",titre = " + "'" +titre+ "'"
+	  +",auteur = "+ "'" +auteur+ "'"
+	  +"where id ="+ idLivre;
 	  stmt.executeUpdate(sql);
+	  System.out.print(sql);
 	  stmt.close();
   }
 

@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedList;
 
 /**
  * Composant logiciel assurant la gestion des emprunts d'exemplaires
@@ -79,12 +80,12 @@ public class ComposantBDEmprunt {
     ArrayList<String[]> emprunts = new ArrayList<String[]>();
 
     Statement stmt = Connexion.getConnection().createStatement();
-    String sql = "select exemplaire.id as id_exemplaire  ,exemplaire.id_livre as id_livre,livre.titre ,livre.auteur ,abonne.id as id_abonne ,abonne.nom as abonne_nom ,abonne.prenom as abonne_prenom,emprunt.date_emprunt "
+    String sql = "select distinct exemplaire.id as id_exemplaire  ,exemplaire.id_livre as id_livre,livre.titre ,livre.auteur ,abonne.id as id_abonne ,abonne.nom as abonne_nom ,abonne.prenom as abonne_prenom,emprunt.date_emprunt "
     		+"from emprunt "
     		+"inner join abonne on emprunt.id_abonne=abonne.id " 
     		+"inner join exemplaire on emprunt.id_exemplaire=exemplaire.id " 
     		+"inner join livre on exemplaire.id_livre=livre.id " 
-    		+"where emprunt.date_emprunt is not null ";
+    		+"where emprunt.date_retour is null ";
 	  ResultSet rset = stmt.executeQuery(sql);
 	  String[] emprunt =new String[8];
 	  System.out.println(sql);
@@ -127,12 +128,12 @@ public class ComposantBDEmprunt {
   public static ArrayList<String[]> listeEmpruntsEnCours(int idAbonne) throws SQLException {
     ArrayList<String[]> emprunts = new ArrayList<String[]>();
     Statement stmt = Connexion.getConnection().createStatement();
-    String sql = "select exemplaire.id as id_exemplaire  ,exemplaire.id_livre as id_livre,livre.titre ,livre.auteur ,abonne.id as id_abonne ,abonne.nom as abonne_nom ,abonne.prenom as abonne_prenom,emprunt.date_emprunt "
+    String sql = "select distinct exemplaire.id as id_exemplaire  ,exemplaire.id_livre as id_livre,livre.titre ,livre.auteur ,abonne.id as id_abonne ,abonne.nom as abonne_nom ,abonne.prenom as abonne_prenom,emprunt.date_emprunt "
     		+"from emprunt "
     		+"inner join abonne on emprunt.id_abonne=abonne.id " 
     		+"inner join exemplaire on emprunt.id_exemplaire=exemplaire.id " 
     		+"inner join livre on exemplaire.id_livre=livre.id " 
-    		+"where emprunt.date_emprunt is not null and abonne.id = "+ idAbonne;
+    		+"where emprunt.date_retour is null and abonne.id = "+ idAbonne;
     ResultSet rset = stmt.executeQuery(sql);
 
 	while(rset.next()){
@@ -174,16 +175,17 @@ public class ComposantBDEmprunt {
   public static ArrayList<String[]> listeEmpruntsHistorique() throws SQLException {
     ArrayList<String[]> emprunts = new ArrayList<String[]>();
     Statement stmt = Connexion.getConnection().createStatement();
-    String sql = "select exemplaire.id as id_exemplaire  ,exemplaire.id_livre as id_livre,livre.titre ,livre.auteur ,abonne.id as id_abonne ,abonne.nom as abonne_nom ,abonne.prenom as abonne_prenom,emprunt.date_emprunt,emprunt.date_retour "
+    String sql = "select distinct exemplaire.id as id_exemplaire  ,exemplaire.id_livre as id_livre,livre.titre ,livre.auteur ,abonne.id as id_abonne ,abonne.nom as abonne_nom ,abonne.prenom as abonne_prenom,emprunt.date_emprunt,emprunt.date_retour "
     		+"from emprunt "
     		+"inner join abonne on emprunt.id_abonne=abonne.id " 
     		+"inner join exemplaire on emprunt.id_exemplaire=exemplaire.id " 
-    		+"inner join livre on exemplaire.id_livre=livre.id " 
-    		+"where emprunt.date_emprunt is not null";
+    		+"inner join livre on exemplaire.id_livre=livre.id " ;
+    		//+"where emprunt.date_emprunt is not null";
 	  ResultSet rset = stmt.executeQuery(sql);
 	  
 	  while(rset.next()){
 	 
+	
 	  String[] emprunt =new String[9];
 	  emprunt[0]=rset.getString("id_exemplaire");
 	  emprunt[1]=rset.getString("id_livre");
@@ -194,6 +196,10 @@ public class ComposantBDEmprunt {
 	  emprunt[6]=rset.getString("abonne_prenom");
 	  emprunt[7]=rset.getString("date_emprunt");
 	  emprunt[8]=rset.getString("date_retour");
+	  if(rset.getString("date_retour") == null){
+		  emprunt[8]= " ";
+	  }
+	  
 	  emprunts.add(emprunt);
 	  }
       rset.close();
@@ -214,17 +220,17 @@ public class ComposantBDEmprunt {
 	  Statement stmt = Connexion.getConnection().createStatement();
 	  Calendar calendar = Calendar.getInstance();
 	  String date_emprunt = new SimpleDateFormat("yyyy-MM-dd").format(calendar.getTime()); 
-	 
-	  SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");     
-	  calendar.add(Calendar.WEEK_OF_YEAR,1);
-	  String date_retour = new SimpleDateFormat("yyyy-MM-dd").format(calendar.getTime());
-	
 	  System.out.println("Date emprunt:" + date_emprunt);
-	  System.out.println("Date retour:" + date_retour);
-	  String sql ="insert into emprunt(id_exemplaire,id_abonne,date_emprunt,date_retour) values(" + idExemplaire + "," + idAbonne + "," + "'" + date_emprunt + "'" +","+ "'" + date_retour+ "')";
-	
-	  stmt.executeUpdate(sql);
-	  stmt.close();
+	  
+	  if(!estEmprunte(idExemplaire)){
+		  System.out.println("Emprunter");
+		  //String date_retour = " ";
+		  String sql ="insert into emprunt(id_exemplaire,id_abonne,date_emprunt) values(" + idExemplaire + "," + idAbonne + "," + "'" + date_emprunt + "'" + " )";
+		  System.out.println(sql);
+		  stmt.executeUpdate(sql);
+		  stmt.close();
+	  }
+	  
   }
   private static java.sql.Date getCurrentDate() {
 	    java.util.Date today = new java.util.Date();
@@ -239,7 +245,13 @@ public class ComposantBDEmprunt {
    */
   public static void rendre(int idExemplaire) throws SQLException {
 	  Statement stmt = Connexion.getConnection().createStatement();
-	  String sql ="delete from emprunt where id="+idExemplaire;
+	  
+	  Calendar calendar = Calendar.getInstance();
+	  String date_retour = new SimpleDateFormat("yyyy-MM-dd").format(calendar.getTime()); 
+	  System.out.println("Date retour:" + date_retour);
+	  
+	  String sql ="update emprunt set date_retour = " + "'" + date_retour +"'" +"where id_exemplaire = " +idExemplaire;
+	  System.out.println(sql);
 	  stmt.executeUpdate(sql);
 	  stmt.close();
   }
@@ -308,36 +320,122 @@ public class ComposantBDEmprunt {
   public static HashMap<String, int[]> statsEmprunts() throws SQLException
   {
     HashMap<String, int[]> stats = new HashMap<String, int[]>();
-    Statement stmt = Connexion.getConnection().createStatement();
+    
+    //Connection pour les resultats d'emprunts
+    Statement stmt1 = Connexion.getConnection().createStatement();
     String sql1 = "select date_emprunt ,count(*) from emprunt group by date_emprunt";
-	ResultSet rset1 = stmt.executeQuery(sql1);
-	String sql2 = "date_retour ,count(*) from emprunt group by date_retour";
-	ResultSet rset2 = stmt.executeQuery(sql1);
+	ResultSet rset1 = stmt1.executeQuery(sql1);
+	
+	//Connection pour les resultats d'emprunts
+	Statement stmt2 = Connexion.getConnection().createStatement();
+	String sql2 = "select date_retour ,count(*) from emprunt group by date_retour";
+	ResultSet rset2 = stmt2.executeQuery(sql2);
+	
+	LinkedList<String[]> emprunts = new LinkedList<String[]>();
+	LinkedList<String[]> retours = new LinkedList<String[]>();
+	
+	// System.out.println(sql1);
+	// System.out.println(sql2);
+	 System.out.println("Emprunts");
 	 while(rset1.next()){
 		 String[] emprunt =new String[2];
-		 emprunt[0]=rset1.getString("date_emprunt");
-		 emprunt[1]=rset1.getString("count");
-		 Integer[] nums = new Integer[2];
+		 //System.out.println("Start Comparing");
+		 if(rset1.getString("date_emprunt")!=null){
+			
+			 emprunt[0]=rset1.getString("date_emprunt");
+			 emprunt[1]=rset1.getString("count");
 		
-		 while(rset2.next()){
-			 String[] retour =new String[2];
-			 retour[0]=rset1.getString("date_retour");
-			 retour[1]=rset1.getString("count");
-			 if(emprunt[0] == retour[0] ){
-				 System.out.print(retour[0]);
-				 nums[0] = Integer.valueOf(emprunt[1]);
-				 nums[1] = Integer.valueOf(retour[1]);
-				 System.out.print(nums[0]);
-				 System.out.print(nums[1]);
-			 }
-			 
+			 System.out.println(emprunt[0] + ":" + emprunt[1]);
+			 System.out.println("");
+			// System.out.println();
+			 emprunts.add(emprunt);
+			 System.out.println("");
 		 }
-		 
 	 }
-	 rset1.close();
-	 rset2.close();
-	 stmt.close();
-		  
-    return stats;
+	 System.out.println("Retours");
+	while(rset2.next()){
+		 String[] retour =new String[2];
+		 
+		 retour[0]=rset2.getString("date_retour");
+		 retour[1]=rset2.getString("count");
+		 
+		 retours.add(retour);
+	
+		 System.out.println(retour[0] + ":" + retour[1]);
+		 System.out.println("");
+	 }
+	
+	//Comparing Items in list
+	
+	System.out.println("Size of Emprunts : " + emprunts.size());
+	System.out.println("Size of Retours : " + retours.size());
+	
+	if(emprunts.size()!=0 && retours.size()!=0 ){
+		for (String[] emprunt : emprunts){
+			int[] nums = new int[2];
+			
+			//Nombre d'emprunts
+			nums[0] = Integer.valueOf(emprunt[1]);
+			
+			for (String[] retour :retours){
+				if(retour[0] != null){
+					
+					if(emprunt[0].compareTo(retour[0])==0){
+						//Nombre d'retours
+						 nums[1] = Integer.valueOf(retour[1]);
+					 }
+					else{
+						
+						if(stats.get(retour[0])==null){
+							//System.out.println("Not present "+ retour[0]);
+						
+						}
+						if(emprunts.contains(emprunt[0])){
+							//nums[0] = 0;
+							//nums[1] = Integer.valueOf(retour[1]);
+						}
+					
+					}
+				}
+				stats.put(emprunt[0],nums); 
+				
+			}
+			
+		 }
+		
+		for (String[] retour: retours){
+			int[] nums = new int[2];
+			nums[1] = Integer.valueOf(retour[1]);
+			
+			for (String[] emprunt :emprunts){
+
+				if(retour[0] != null){
+					if(emprunt[0].compareTo(retour[0])==0){
+						 nums[0] = Integer.valueOf(emprunt[1]);
+						 nums[1] = Integer.valueOf(retour[1]);
+					 }
+					else{				
+						if(stats.get(retour[0])==null){
+							System.out.println("Not present "+ retour[0]);	
+							
+						}
+						if(!retours.contains(retour[0])){
+							//nums[0] = 0;
+							//nums[1] = Integer.valueOf(retour[1]);
+						}				
+					}
+					stats.put(retour[0],nums); 				
+				}
+			}
+		}
+	}
+	
+	rset1.close();
+	rset2.close();
+	stmt1.close();
+	stmt2.close();
+	return stats;
+	 
   }
+  
 }
